@@ -166,3 +166,31 @@ func TestH265EmptyPacket(t *testing.T) {
 	// if all NALUs have been removed, no RTP packets must be generated.
 	require.Equal(t, []*rtp.Packet(nil), unit.RTPPackets)
 }
+
+func TestH265AggregatedDynamicParams(t *testing.T) {
+	forma := &formats.H265{PayloadTyp: 96}
+	p, err := New(1472, forma, false, nil)
+	require.NoError(t, err)
+
+	// The publisher sends all parameter sets and a key frame in one AP.
+	// Use the same synthetic parameter NALUs as TestH265DynamicParams.
+	au := [][]byte{
+		{byte(h265.NALUType_VPS_NUT) << 1, 1, 2, 3},
+		{byte(h265.NALUType_SPS_NUT) << 1, 4, 5, 6},
+		{byte(h265.NALUType_PPS_NUT) << 1, 7, 8, 9},
+		{byte(h265.NALUType_CRA_NUT) << 1, 1},
+	}
+	enc := forma.CreateEncoder()
+	pkts, err := enc.Encode(au, 0)
+	require.NoError(t, err)
+	require.Len(t, pkts, 1)
+	require.Equal(t, h265.NALUType_AggregationUnit,
+		h265.NALUType((pkts[0].Payload[0] >> 1) & 0b111111))
+
+	data := &UnitH265{RTPPackets: pkts}
+	require.NoError(t, p.Process(data, true))
+	require.Equal(t, au[0], forma.VPS)
+	require.Equal(t, au[1], forma.SPS)
+	require.Equal(t, au[2], forma.PPS)
+	require.Equal(t, au, data.AU)
+}
