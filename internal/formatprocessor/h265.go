@@ -55,7 +55,7 @@ func rtpH265ExtractVPSSPSPPS(pkt *rtp.Packet) ([]byte, []byte, []byte) {
 			nalu := payload[:size]
 			payload = payload[size:]
 
-			typ = h265.NALUType((pkt.Payload[0] >> 1) & 0b111111)
+			typ = h265.NALUType((nalu[0] >> 1) & 0b111111)
 
 			switch typ {
 			case h265.NALUType_VPS_NUT:
