@@ -136,6 +136,21 @@ func TestConfFromFileAndEnv(t *testing.T) {
 	}, pa)
 }
 
+func TestConfFromFileAndEnvEmptyPath(t *testing.T) {
+	t.Setenv("MTX_PATHS_CAM1_SOURCE", "rtsp://testing")
+
+	tmpf, err := writeTempFile([]byte("paths:\n  cam1:\n"))
+	require.NoError(t, err)
+	defer os.Remove(tmpf)
+
+	conf, hasFile, err := Load(tmpf)
+	require.NoError(t, err)
+	require.True(t, hasFile)
+	require.NotNil(t, conf.Paths["cam1"])
+	require.Equal(t, "rtsp://testing", conf.Paths["cam1"].Source)
+	require.Equal(t, 10*StringDuration(time.Second), conf.Paths["cam1"].SourceOnDemandStartTimeout)
+}
+
 func TestConfFromEnvOnly(t *testing.T) {
 	os.Setenv("RTSP_PATHS_CAM1_SOURCE", "rtsp://testing")
 	defer os.Unsetenv("RTSP_PATHS_CAM1_SOURCE")

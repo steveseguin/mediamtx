@@ -103,3 +103,16 @@ func TestLoad(t *testing.T) {
 	require.Equal(t, []string{"val1", "val2"}, s.MySlice)
 	require.Equal(t, []string{}, s.MySliceEmpty)
 }
+
+func TestLoadNilMapEntry(t *testing.T) {
+	t.Setenv("MYPREFIX_MYMAP_MYKEY_MYVALUE", "testcontent")
+
+	s := testStruct{
+		MyMap: map[string]*mapEntry{"mykey": nil},
+	}
+
+	err := Load("MYPREFIX", &s)
+	require.NoError(t, err)
+	require.NotNil(t, s.MyMap["mykey"])
+	require.Equal(t, "testcontent", s.MyMap["mykey"].MyValue)
+}
